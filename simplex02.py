@@ -1,48 +1,72 @@
 import numpy as np
-from itertools import combinations
 
-Cj = np.array([4,3,6,0,0,0])       
-
-basics = np.where(Cj == 0)[0] #indexes 
-print(basics)
-
-cb  = Cj[basics]
+A1 = np.array([[2,3,2,1,0,0,440],[4,0,3,0,1,0,470],[2,5,0,0,0,1,430] ])
+C1 = np.array([4,3,6,0,0,0])      # Objective Function Coefficients 
 
 
-body = np.array([[2,3,2,1,0,0,440],[4,0,3,0,1,0,470],[2,5,0,0,0,1,430] ])
+A2 = np.array([[-1,1,0,1,0,0,0],
+               [ 0,-1,2,0,1,0,0],
+               [ 1, 1,1,0,0,1,00]])
+
+C2 = np.array([12,15,14,0,0,0])
 
 
 
-Zj = cb.dot(body)
+A3 = np.array([[3,-1,2,1,0,0,7],
+               [-2,-4,0,0,1,0,12],
+               [-4,3,8,0,0,1,10]])
+C3 = np.array([1,-3,3,0,0,0])
 
 
-cjZj = Cj-Zj[:-1]
 
-entry = np.argmax(cjZj)
-
-print(body[:,-1] / body[:,entry])
-leave = np.argmin(body[:,-1] / body[:,entry])
-pivot = body[leave,entry]
+A4 = np.array([[2,3,2,1,0,0,440],
+               [4,0,3,0,1,0,470],
+               [2,5,0,0,0,1,430]])
+C4= np.array([4,3,6,0,0,0])
 
 
-tm = body[leave,:] / np.float(pivot)
-print(tm)
-body[leave,:] = tm
-print(body)
+
+def simplex(Amatrix,CoefObject,direction="max"):
+    #Initialize
+    Amatrix = Amatrix.astype(float)
+    CoefObject = CoefObject.astype(float)
+    basics = np.where(CoefObject == 0)[0] #indexes 
+    cb  = CoefObject[basics] # Basic Coefficients
+    Zj = cb.dot(Amatrix) 
+    NetProfit = CoefObject-Zj[:-1] # cj - Zj
+    iteration = 0
+    #Iteration
+    while np.any(NetProfit > 0):
+        iteration += 1
+        # Define Key
+        if direction == "max":
+            entry = np.argmax(NetProfit)
+        else:
+            entry = np.argmin(NetProfit)
+        
+        ratios = Amatrix[:,-1] / Amatrix[:,entry]
+        ratios[ratios < 0] = np.infty # if there exists negative ratios
+        leave = np.argmin(ratios) # get the index with minimum value
+        pivot = Amatrix[leave,entry]
+        # Updte row with pivot and row leaving
+        rowKey = Amatrix[leave,:] / pivot
+        Amatrix[leave,:] = rowKey
+        
+        # Solve Equations
+        for row in range(Amatrix.shape[0]):
+            if(row == leave): continue
+            Amatrix[row, : ] =Amatrix[row, : ] - (Amatrix[row,entry] * rowKey   )
+        
+        #updates values
+        basics[leave] = entry  
+        cb  = CoefObject[basics]
+        Zj = cb.dot(Amatrix)
+        NetProfit = CoefObject-Zj[:-1] # cj - Zj
+        
+    
+    return dict(zip(basics,Amatrix[:, -1])), Zj[-1]
 
 
-#update basics
-
-basics[leave] = entry
 
 
-#update Cb
-cb  = Cj[basics]
-
-
-# Iteration 2
-
-Zj = cb.dot(body)
-
-print("\n" , cb)
-print(Zj)
+print(4.5 * 520*15)
