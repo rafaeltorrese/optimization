@@ -24,7 +24,26 @@ A4 = np.array([[2,3,2,1,0,0,440],
                [2,5,0,0,0,1,430]])
 C4= np.array([4,3,6,0,0,0])
 
+def iterate():
+    # Define Key
+    ratios = Amatrix[:, -1] / Amatrix[:,entry] # RHS / Entry column
+    ratios[ratios < 0] = np.infty # if there exists negative ratios
+    leave = np.argmin(ratios) # get the index with minimum value
+    pivot = Amatrix[leave,entry]
+    # Updte row with pivot and row leaving
+    rowKey = Amatrix[leave,:] / pivot
+    Amatrix[leave,:] = rowKey
+    
+    # Solve Equations
+    for row in range(Amatrix.shape[0]):
+        if(row == leave): continue
+        Amatrix[row, : ] =Amatrix[row, : ] - (Amatrix[row,entry] * rowKey   )        
 
+    #updates values
+    basics[leave] = entry  
+    cb  = CoefObject[basics]
+    Zj = cb.dot(Amatrix)
+    NetProfit = CoefObject-Zj[:-1] # cj - Zj, Except last column (RHS)
 
 def simplex(Amatrix,CoefObject,RHS,direction="max"):
     #Initialize
@@ -39,41 +58,64 @@ def simplex(Amatrix,CoefObject,RHS,direction="max"):
     NetProfit = CoefObject-Zj[:-1] # cj - Zj
     iteration = 0
     #Iteration
-    
-    while np.any(NetProfit > 0):
-        iteration += 1
-        
-        if direction == "max":
+
+
+    if direction == "max":
+        while np.any(NetProfit > 0):
+            iteration += 1
             entry = np.argmax(NetProfit)
-        else:
+            #iterate()
+            # Define Key
+            ratios = Amatrix[:, -1] / Amatrix[:,entry] # RHS / Entry column
+            ratios[ratios < 0] = np.infty # if there exists negative ratios
+            leave = np.argmin(ratios) # get the index with minimum value
+            pivot = Amatrix[leave,entry]
+            # Updte row with pivot and row leaving
+            rowKey = Amatrix[leave,:] / pivot
+            Amatrix[leave,:] = rowKey
+        
+            # Solve Equations
+            for row in range(Amatrix.shape[0]):
+                if(row == leave): continue
+                Amatrix[row, : ] =Amatrix[row, : ] - (Amatrix[row,entry] * rowKey   )
+        
+            #updates values
+            basics[leave] = entry  
+            cb  = CoefObject[basics]
+            Zj = cb.dot(Amatrix)
+            NetProfit = CoefObject-Zj[:-1] # cj - Zj, Except last column (RHS)
+            
+    else:
+        while np.any(NetProfit < 0):
+            iteration += 1
             entry = np.argmin(NetProfit)
-        # Define Key
-        ratios = Amatrix[:, -1] / Amatrix[:,entry] # RHS / Entry column
-        ratios[ratios < 0] = np.infty # if there exists negative ratios
-        leave = np.argmin(ratios) # get the index with minimum value
-        pivot = Amatrix[leave,entry]
-        # Updte row with pivot and row leaving
-        rowKey = Amatrix[leave,:] / pivot
-        Amatrix[leave,:] = rowKey
+            
+            # Define Key
+            ratios = Amatrix[:, -1] / Amatrix[:,entry] # RHS / Entry column
+            ratios[ratios < 0] = np.infty # if there exists negative ratios
+            leave = np.argmin(ratios) # get the index with minimum value
+            pivot = Amatrix[leave,entry]
+            # Updte row with pivot and row leaving
+            rowKey = Amatrix[leave,:] / pivot
+            Amatrix[leave,:] = rowKey
         
-        # Solve Equations
-        for row in range(Amatrix.shape[0]):
-            if(row == leave): continue
-            Amatrix[row, : ] =Amatrix[row, : ] - (Amatrix[row,entry] * rowKey   )
+            # Solve Equations
+            for row in range(Amatrix.shape[0]):
+                if(row == leave): continue
+                Amatrix[row, : ] =Amatrix[row, : ] - (Amatrix[row,entry] * rowKey   )
         
-        #updates values
-        basics[leave] = entry  
-        cb  = CoefObject[basics]
-        Zj = cb.dot(Amatrix)
-        NetProfit = CoefObject-Zj[:-1] # cj - Zj, Except last column (RHS)
-        
-    
+            #updates values
+            basics[leave] = entry  
+            cb  = CoefObject[basics]
+            Zj = cb.dot(Amatrix)
+            NetProfit = CoefObject-Zj[:-1] # cj - Zj, Except last column (RHS)
+            
     return dict(zip(basics,Amatrix[:, -1])), Zj[-1]
 
 
 
 
-solutions,z = simplex(A1,C1, direction="max")
+solutions,z = simplex(A1,C1,B1, direction="max")
 
 print(solutions)
 print(z)
