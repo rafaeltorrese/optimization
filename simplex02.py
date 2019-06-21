@@ -1,12 +1,12 @@
 import numpy as np
 
-A1 = np.array([[2,3,2,1,0,0,440],[4,0,3,0,1,0,470],[2,5,0,0,0,1,430] ])
-C1 = np.array([4,3,6,0,0,0])      # Objective Function Coefficients 
-
+A1 = np.array([[2,3,2,1,0,0],[4,0,3,0,1,0],[2,5,0,0,0,1] ])
+C1 = np.array([4,3,6,0,0,0])      # Objective Function Coefficients
+B1 = np.array([440,470,430])
 
 A2 = np.array([[-1,1,0,1,0,0,0],
                [ 0,-1,2,0,1,0,0],
-               [ 1, 1,1,0,0,1,00]])
+               [ 1, 1,1,0,0,1,0]])
 
 C2 = np.array([12,15,14,0,0,0])
 
@@ -26,25 +26,29 @@ C4= np.array([4,3,6,0,0,0])
 
 
 
-def simplex(Amatrix,CoefObject,direction="max"):
+def simplex(Amatrix,CoefObject,RHS,direction="max"):
     #Initialize
     Amatrix = Amatrix.astype(float)
     CoefObject = CoefObject.astype(float)
+    RHS = RHS.astype(float) # Right Hand Side
+    RHS = RHS[:,np.newaxis] # convert to column vector
+    Amatrix = np.hstack((Amatrix,RHS))
     basics = np.where(CoefObject == 0)[0] #indexes 
     cb  = CoefObject[basics] # Basic Coefficients
     Zj = cb.dot(Amatrix) 
     NetProfit = CoefObject-Zj[:-1] # cj - Zj
     iteration = 0
     #Iteration
+    
     while np.any(NetProfit > 0):
         iteration += 1
-        # Define Key
+        
         if direction == "max":
             entry = np.argmax(NetProfit)
         else:
             entry = np.argmin(NetProfit)
-        
-        ratios = Amatrix[:,-1] / Amatrix[:,entry]
+        # Define Key
+        ratios = Amatrix[:, -1] / Amatrix[:,entry] # RHS / Entry column
         ratios[ratios < 0] = np.infty # if there exists negative ratios
         leave = np.argmin(ratios) # get the index with minimum value
         pivot = Amatrix[leave,entry]
@@ -61,7 +65,7 @@ def simplex(Amatrix,CoefObject,direction="max"):
         basics[leave] = entry  
         cb  = CoefObject[basics]
         Zj = cb.dot(Amatrix)
-        NetProfit = CoefObject-Zj[:-1] # cj - Zj
+        NetProfit = CoefObject-Zj[:-1] # cj - Zj, Except last column (RHS)
         
     
     return dict(zip(basics,Amatrix[:, -1])), Zj[-1]
@@ -69,4 +73,7 @@ def simplex(Amatrix,CoefObject,direction="max"):
 
 
 
-print(4.5 * 520*15)
+solutions,z = simplex(A1,C1, direction="max")
+
+print(solutions)
+print(z)
