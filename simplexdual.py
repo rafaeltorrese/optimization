@@ -1,40 +1,37 @@
 import numpy as np
 
-X = np.array([[3,1,-1,1,0,0,0],
-               [-1,4,1,0,-1,0,1],
-               [0,1,1,0,0,1,0]]) # Body coefficients
-C = np.array([-1,2,-1])      # Objective Function Coefficients
-S = np.array([0,0,0]) # slack coefficients
-A = np.array([-10000]) # # Artificial coefficients
-b = np.array([10,6,4]) # Right Hand Coefficients
+A1 = np.array([[2,3,2,1,0,0],[4,0,3,0,1,0],[2,5,0,0,0,1] ])
+C1 = np.array([4,3,6,0,0,0])      # Objective Function Coefficients
+B1 = np.array([440,470,430])
+
+#minimize Example 2.16-5
+A2 = np.array([[3,-1,2,1,0,0],[-2,-4,0,0,1,0],[-4,3,8,0,0,1]])
+C2 = np.array([1,-3,3,0,0,0])
+B2 = np.array([7,12,10])
+
+#maximize
+A3 = np.array([[-1,1,0,1,0,0],[0,-1,2,0,1,0],[1,1,1,0,0,1]])
+C3 = np.array([12,15,14,0,0,0])
+B3 = np.array([0,0,100])
 
 
+#maximize
+A4 = np.array([[1,1,1,1,0,0],[2,3,5,0,1,0],[2,-1,-1,0,0,1]])
+C4 = np.array([3,2,5,0,0,0])
+B4 = np.array([9,30,8])
 
 
-
-def simplex(Amatrix,CoefObject,RHS,Slack,Artificial=None,direction="max"):
+def simplex(Amatrix,CoefObject,RHS,direction="max"):
     #Initialize
-    CoefObject = CoefObject.astype(float)
-    RHS = RHS.astype(float)
-    if Artificial:
-        Cj = np.concatenate((CoefObject,Slack,Artificial))
-    else:
-        Cj = np.concatenate((CoefObject,Slack))
     Amatrix = Amatrix.astype(float)
-    
+    CoefObject = CoefObject.astype(float)
     RHS = RHS.astype(float) # Right Hand Side
     RHS = RHS[:,np.newaxis] # convert to column vector
-    
-    n = len(Slack) + len(Artificial)
-    print(n)
     Amatrix = np.hstack((Amatrix,RHS))
-    basics = np.sort(np.where(Amatrix == 1)[1][-n:]) #indexes 
-    print(np.sort(np.where(Amatrix == 1)[1]))
-    print(basics)
-    cb  = Cj[basics] # Basic Coefficients    
-    print(cb)
+    basics = np.where(CoefObject == 0)[0] #indexes 
+    cb  = CoefObject[basics] # Basic Coefficients
     Zj = cb.dot(Amatrix) 
-    NetProfit = Cj-Zj[:-1] # cj - Zj
+    NetProfit = CoefObject-Zj[:-1] # cj - Zj
     iteration = 0
     #Iteration
 
@@ -52,7 +49,7 @@ def simplex(Amatrix,CoefObject,RHS,Slack,Artificial=None,direction="max"):
             pivot = Amatrix[leave,entry]
             # Updte row with pivot and row leaving
             rowKey = Amatrix[leave,:] / pivot
-            
+
             
             print(entry,leave, "\n")
         
@@ -67,9 +64,9 @@ def simplex(Amatrix,CoefObject,RHS,Slack,Artificial=None,direction="max"):
         
             #updates values
             basics[leave] = entry  
-            cb  = Cj[basics]
+            cb  = CoefObject[basics]
             Zj = cb.dot(Amatrix)
-            NetProfit = Cj-Zj[:-1] # cj - Zj, Except last column (RHS)
+            NetProfit = CoefObject-Zj[:-1] # cj - Zj, Except last column (RHS)
             print(f"Iteration {iteration}")
             print(Amatrix,"\n")
             
@@ -103,21 +100,18 @@ def simplex(Amatrix,CoefObject,RHS,Slack,Artificial=None,direction="max"):
         
             #updates values
             basics[leave] = entry  
-            cb  = Cj[basics]
+            cb  = CoefObject[basics]
             Zj = cb.dot(Amatrix)
-            NetProfit = Cj-Zj[:-1] # cj - Zj, Except last column (RHS)
+            NetProfit = CoefObject-Zj[:-1] # cj - Zj, Except last column (RHS)
             print(f"Iteration{iteration}")
             print(Amatrix, "\n")
             
-    return dict(zip(basics,Amatrix[:, -1])), Zj[-1], Amatrix
+    return dict(zip(basics,Amatrix[:, -1])), Zj[-1]
 
 
 
 
-solutions,z,body = simplex(X,C,b,S,A, direction="max")
+solutions,z = simplex(A4,C4,B4, direction="max")
 
 print(solutions)
 print(z)
-print("\n",body)
-
-#np.savetxt("matrix.csv",body,delimiter=",")
