@@ -1,12 +1,17 @@
 import numpy as np
 
-X = np.array([[3,1,-1,1,0,0,0],
-               [-1,4,1,0,-1,0,1],
-               [0,1,1,0,0,1,0]]) # Body coefficients
-C = np.array([-1,2,-1])      # Objective Function Coefficients
-S = np.array([0,0,0]) # slack coefficients
-A = np.array([-10000]) # # Artificial coefficients
-b = np.array([10,6,4]) # Right Hand Coefficients
+X = np.array([[1,7,3,7],
+               [3,-1,1,2],
+               [2,3,-1,1]]) # Body coefficients
+nslacks = 3
+b = np.array([46,8,10]) # Right Hand Coefficients
+C = np.array([2,1,-3,5])      # Objective Function Coefficients
+I = np.eye(nslacks)
+S = np.zeros(nslacks) # slack coefficients
+
+#A = np.array([-10000]) # # Artificial coefficients
+
+X = np.hstack((X,I))
 
 
 
@@ -15,21 +20,21 @@ b = np.array([10,6,4]) # Right Hand Coefficients
 def simplex(Amatrix,CoefObject,RHS,Slack,Artificial=None,direction="max"):
     #Initialize
     CoefObject = CoefObject.astype(float)
+    nvars = len(CoefObject) # number of decision variables
     RHS = RHS.astype(float)
     if Artificial:
         Cj = np.concatenate((CoefObject,Slack,Artificial))
     else:
         Cj = np.concatenate((CoefObject,Slack))
     Amatrix = Amatrix.astype(float)
-    
+    print(Cj)
     RHS = RHS.astype(float) # Right Hand Side
     RHS = RHS[:,np.newaxis] # convert to column vector
     
-    n = len(Slack) + len(Artificial)
-    print(n)
     Amatrix = np.hstack((Amatrix,RHS))
-    basics = np.sort(np.where(Amatrix == 1)[1][-n:]) #indexes 
-    print(np.sort(np.where(Amatrix == 1)[1]))
+    cols= np.sort(np.where(Amatrix == 1)[1]) #indexes 
+    cols.sort() # sort Column Indexes
+    basics = cols[cols >= nvars] # select only slack and artificial indexes
     print(basics)
     cb  = Cj[basics] # Basic Coefficients    
     print(cb)
@@ -114,10 +119,10 @@ def simplex(Amatrix,CoefObject,RHS,Slack,Artificial=None,direction="max"):
 
 
 
-solutions,z,body = simplex(X,C,b,S,A, direction="max")
+solutions,z,finalMatrix = simplex(X,C,b,S, direction="max")
 
 print(solutions)
 print(z)
-print("\n",body)
+print("\n",finalMatrix)
 
 #np.savetxt("matrix.csv",body,delimiter=",")
