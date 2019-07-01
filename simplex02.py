@@ -63,6 +63,7 @@ def simplex(Amatrix,CoefObject,RHS,Slack,Artificial=None,direction=1):
         columnEntry = Amatrix[:,entry]
         if np.all(columnEntry == np.Infinity):break
         ratios[columnEntry < 0] = np.infty # if there exists negative ratios
+        if np.all(ratios == np.infty):break
         leave = np.argmin(ratios) # get the index with minimum value
         pivot = Amatrix[leave,entry]
         # Updte row with pivot and row leaving
@@ -87,7 +88,7 @@ def simplex(Amatrix,CoefObject,RHS,Slack,Artificial=None,direction=1):
         NetProfit = Cj-Zj[:-1] # cj - Zj, Except last column (RHS)
         print(f"Iteration {iteration}")
         print(Amatrix,"\n")
-        if iteration == 10:break
+        
             
             
             
