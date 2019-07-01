@@ -61,6 +61,7 @@ def simplex(Amatrix,CoefObject,RHS,Slack,Artificial=None,direction=1):
         # Define Key
         ratios = Amatrix[:, -1] / Amatrix[:,entry] # RHS / Entry column
         columnEntry = Amatrix[:,entry]
+        if np.all(columnEntry == np.Infinity):break
         ratios[columnEntry < 0] = np.infty # if there exists negative ratios
         leave = np.argmin(ratios) # get the index with minimum value
         pivot = Amatrix[leave,entry]
