@@ -61,9 +61,8 @@ def simplex(Amatrix,CoefObject,RHS,Slack,Artificial=None,direction=1):
         # Define Key
         ratios = Amatrix[:, -1] / Amatrix[:,entry] # RHS / Entry column
         columnEntry = Amatrix[:,entry]
-        if np.all(columnEntry == np.Infinity):break
         ratios[columnEntry < 0] = np.infty # if there exists negative ratios
-        if np.all(ratios == np.infty):break
+        if np.all(ratios == np.infty):break # Entry Column with all negative elements
         leave = np.argmin(ratios) # get the index with minimum value
         pivot = Amatrix[leave,entry]
         # Updte row with pivot and row leaving
@@ -130,15 +129,17 @@ def simplex(Amatrix,CoefObject,RHS,Slack,Artificial=None,direction=1):
 #            if iteration == 20:break
 #            
             
-    return dict(zip(basics,Amatrix[:, -1])), Zj[-1], Amatrix
+    return dict(zip(basics,Amatrix[:, -1])), Zj[-1], Amatrix, iteration
 
 
 
 
-solutions,z,finalMatrix = simplex(X,C,b,S,A, direction=-1)
+solutions,z,finalMatrix, iterations = simplex(X,C,b,S,A, direction=-1)
 
+
+print(f"No Iterations: {iterations}")
 print(solutions)
-print(z)
+print(f"Z value: {z}")
 print("\n",finalMatrix)
 
 #np.savetxt("matrix.csv",body,delimiter=",")
