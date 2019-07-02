@@ -1,117 +1,104 @@
 import numpy as np
 
-A1 = np.array([[2,3,2,1,0,0],[4,0,3,0,1,0],[2,5,0,0,0,1] ])
-C1 = np.array([4,3,6,0,0,0])      # Objective Function Coefficients
-B1 = np.array([440,470,430])
-
-#minimize Example 2.16-5
-A2 = np.array([[3,-1,2,1,0,0],[-2,-4,0,0,1,0],[-4,3,8,0,0,1]])
-C2 = np.array([1,-3,3,0,0,0])
-B2 = np.array([7,12,10])
-
-#maximize
-A3 = np.array([[-1,1,0,1,0,0],[0,-1,2,0,1,0],[1,1,1,0,0,1]])
-C3 = np.array([12,15,14,0,0,0])
-B3 = np.array([0,0,100])
 
 
-#maximize
-A4 = np.array([[1,1,1,1,0,0],[2,3,5,0,1,0],[2,-1,-1,0,0,1]])
-C4 = np.array([3,2,5,0,0,0])
-B4 = np.array([9,30,8])
+
+C = np.array("-1 -2 -3".split(" ") , dtype=float)      # Objective Function Coefficients
+
+X = np.array("-2 1 -1 1 1 2 0 -1 2".split(" ") , dtype=float).reshape((3,3)) # Body coefficients
 
 
-def simplex(Amatrix,CoefObject,RHS,direction="max"):
+nslacks = 3
+b = np.array([-4, 8, -2]) # Right Hand Coefficients
+
+
+I =np.eye(nslacks)
+S = np.zeros(nslacks) # slack coefficients
+
+
+X = np.hstack((X,I))
+
+
+
+
+
+def simplex(Amatrix,CoefObject,RHS,Slack):
     #Initialize
-    Amatrix = Amatrix.astype(float)
+    Slack = Slack.astype(float)
     CoefObject = CoefObject.astype(float)
+    nvars = len(CoefObject) # number of decision variables
+    RHS = RHS.astype(float)
+    Cj = np.concatenate((CoefObject,Slack))
+    Amatrix = Amatrix.astype(float)
+    
     RHS = RHS.astype(float) # Right Hand Side
     RHS = RHS[:,np.newaxis] # convert to column vector
+    
     Amatrix = np.hstack((Amatrix,RHS))
-    basics = np.where(CoefObject == 0)[0] #indexes 
-    cb  = CoefObject[basics] # Basic Coefficients
+    cols= np.sort(np.where(Amatrix == 1)[1]) #indexes 
+    cols.sort() # sort Column Indexes
+    basics = cols[cols >= nvars] # select only slack and artificial indexes
+    
+    cb  = Cj[basics] # Basic Coefficients    
+    
     Zj = cb.dot(Amatrix) 
-    NetProfit = CoefObject-Zj[:-1] # cj - Zj
+    NetProfit = Cj-Zj[:-1] # cj - Zj
     iteration = 0
-    #Iteration
+    
 
-
-    if direction == "max":
-        while np.any(NetProfit > 0):
-            iteration += 1
-            entry = np.argmax(NetProfit)
-            #iterate()
-            # Define Key
-            ratios = Amatrix[:, -1] / Amatrix[:,entry] # RHS / Entry column
-            columnEntry = Amatrix[:,entry]
-            ratios[columnEntry < 0] = np.infty # if there exists negative ratios
-            leave = np.argmin(ratios) # get the index with minimum value
-            pivot = Amatrix[leave,entry]
-            # Updte row with pivot and row leaving
-            rowKey = Amatrix[leave,:] / pivot
-
-            
-            print(entry,leave, "\n")
+    
+    while np.any(NetProfit <= 0) and np.any(Amatrix[:, -1] < 0):
+        iteration += 1
+        leaving = np.argmin(Amatrix[:, -1]) # Choose index of row key
+        rowKey = np.array(Amatrix[leaving , :-1])
         
-
-            Amatrix[leave,:] = rowKey
-            
-            # Solve Equations
-            for row in range(Amatrix.shape[0]):
-                if(row == leave): continue
-                Amatrix[row, : ] =Amatrix[row, : ] - (Amatrix[row,entry] * rowKey)
-                #print(Amatrix,"\n")
+        if np.all(rowKey >= 0):break # Row Key with all non-negative elements
+        rowKey[rowKey >= 0] = np.Inf # For excluding non-negative elements
         
-            #updates values
-            basics[leave] = entry  
-            cb  = CoefObject[basics]
-            Zj = cb.dot(Amatrix)
-            NetProfit = CoefObject-Zj[:-1] # cj - Zj, Except last column (RHS)
-            print(f"Iteration {iteration}")
-            print(Amatrix,"\n")
-            
-            
-            
-    else:
-        while np.any(NetProfit < 0):
-            iteration += 1
-            entry = np.argmin(NetProfit)
-            
-            # Define Key
-            ratios = Amatrix[:, -1] / Amatrix[:,entry] # RHS / Entry column
-            columnEntry = Amatrix[:,entry]
-            ratios[columnEntry < 0] = np.infty # if there exists negative ratios
-            leave = np.argmin(ratios) # get the index with minimum value
-            pivot = Amatrix[leave,entry]
-            # Updte row with pivot and row leaving
-            rowKey = Amatrix[leave,:] / pivot
-
-
-            print(entry,leave, "\n")
-
-            
-            Amatrix[leave,:] = rowKey
+        ratios = NetProfit / rowKey #
+        ratios[ratios == 0] = np.Inf
+        #ratios[ratios <= 0] = np.infty
+        entry = np.argmin(ratios) # 
+        rowKey = Amatrix[leaving , :] # Get Original Values fror RowKey
+        pivot = Amatrix[leaving,entry]    
         
-            # Solve Equations
-            for row in range(Amatrix.shape[0]):
-                if(row == leave): continue
-                Amatrix[row, : ] =Amatrix[row, : ] - (Amatrix[row,entry] * rowKey   )
-                
+        rowKey = rowKey / pivot                   
         
-            #updates values
-            basics[leave] = entry  
-            cb  = CoefObject[basics]
-            Zj = cb.dot(Amatrix)
-            NetProfit = CoefObject-Zj[:-1] # cj - Zj, Except last column (RHS)
-            print(f"Iteration{iteration}")
-            print(Amatrix, "\n")
+        print(f"Entry: x{entry+1} Leaving: x{leaving+1} \n")
+    
+        Amatrix[leaving,:] = rowKey
+        
+        # Solve Equations
+        for row in range(Amatrix.shape[0]):
+            if(row == leaving): continue
+            Amatrix[row, : ] = Amatrix[row, : ] - (Amatrix[row,entry] * rowKey)
             
-    return dict(zip(basics,Amatrix[:, -1])), Zj[-1]
+    
+        #updates values
+        basics[leaving] = entry  
+        cb  = Cj[basics]
+        Zj = cb.dot(Amatrix)
+        NetProfit = Cj-Zj[:-1] # cj - Zj, Except last column (RHS)
+        print(f"Iteration {iteration}")
+        print(Amatrix,"\n")
+        
+    return basics, Zj, Amatrix, iteration, NetProfit
 
 
 
 
-solutions,z = simplex(A4,C4,B4, direction="max")
+basics,Zj,finalMatrix, iterations, netprofit = simplex(X,C,b,S)
 
-print(solutions)
-print(z)
+
+print(f"No Iterations: {iterations}")
+print(f"Basics {basics}")
+
+print(np.hstack((basics[:,np.newaxis],finalMatrix)))
+print(f"Z values: {Zj}")
+print(f"Z : {Zj[-1]}")
+print(f"\n Net Profit {netprofit}")
+print("\n",finalMatrix)
+
+np.savetxt("matrix.csv",np.hstack((basics[:,np.newaxis],finalMatrix)),delimiter=",")
+
+

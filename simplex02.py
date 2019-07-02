@@ -1,20 +1,16 @@
 import numpy as np
 
 
-C = np.array([1,-3,2])      # Objective Function Coefficients
 
-X = np.array([[3,-1,2],
-               [-2,4,0],
-               [-4,3,8]]) # Body coefficients
+
+C = np.array([3,4,1,5])      # Objective Function Coefficients
+
+X = np.array("8 3 2 2 2 5 1 4 1 2 5 1".split(" ") , dtype=float).reshape((3,4)) # Body coefficients
 nslacks = 3
-b = np.array([7,12,10]) # Right Hand Coefficients
+b = np.array([10,5,6]) # Right Hand Coefficients
 
 
-I = np.array([[-1,0,0,1],
-              [0,1,0,0],
-              [0,0,1,0]
-              ])
-
+I =np.eye(nslacks)
 S = np.zeros(nslacks) # slack coefficients
 
 A = np.array([10000]) # # Artificial coefficients
@@ -35,7 +31,7 @@ def simplex(Amatrix,CoefObject,RHS,Slack,Artificial=None,direction=1):
     else:
         Cj = np.concatenate((CoefObject,Slack))
     Amatrix = Amatrix.astype(float)
-    print(Cj)
+    
     RHS = RHS.astype(float) # Right Hand Side
     RHS = RHS[:,np.newaxis] # convert to column vector
     
@@ -43,103 +39,64 @@ def simplex(Amatrix,CoefObject,RHS,Slack,Artificial=None,direction=1):
     cols= np.sort(np.where(Amatrix == 1)[1]) #indexes 
     cols.sort() # sort Column Indexes
     basics = cols[cols >= nvars] # select only slack and artificial indexes
-    print(basics)
+    
     cb  = Cj[basics] # Basic Coefficients    
-    print(cb)
+    
     Zj = cb.dot(Amatrix) 
     NetProfit = Cj-Zj[:-1] # cj - Zj
     iteration = 0
-    #Iteration
-
-    
-    #if direction == 1:
-    while np.any((direction*NetProfit )> 0):
-        iteration += 1
-        
-        entry = np.argmax((direction*NetProfit)) # For Maximization Problem
-        #iterate()
-        # Define Key
-        ratios = Amatrix[:, -1] / Amatrix[:,entry] # RHS / Entry column
-        columnEntry = Amatrix[:,entry]
-        ratios[columnEntry < 0] = np.infty # if there exists negative ratios
-        if np.all(ratios == np.infty):break # Entry Column with all negative elements
-        leave = np.argmin(ratios) # get the index with minimum value
-        pivot = Amatrix[leave,entry]
-        # Updte row with pivot and row leaving
-        rowKey = Amatrix[leave,:] / pivot
-        
-        
-        print(entry,leave, "\n")
     
 
-        Amatrix[leave,:] = rowKey
+    with open("results.csv" , "ba") as file:
+        while np.any((direction*NetProfit )> 0):
+            iteration += 1
+            
+            entry = np.argmax((direction*NetProfit)) # For Maximization Problem
+            #iterate()
+            # Define Key
+            ratios = Amatrix[:, -1] / Amatrix[:,entry] # RHS / Entry column
+            columnEntry = Amatrix[:,entry]
+            if np.all(columnEntry < 0):break # Entry Column with all negative elements
+            ratios[columnEntry < 0] = np.infty # if there exists negative ratios
+            
+            leave = np.argmin(ratios) # get the index with minimum value
+            pivot = Amatrix[leave,entry]
+            # Updte row with pivot and row leaving
+            rowKey = Amatrix[leave,:] / pivot
+            
+            print(entry,leave, "\n")
         
-        # Solve Equations
-        for row in range(Amatrix.shape[0]):
-            if(row == leave): continue
-            Amatrix[row, : ] =Amatrix[row, : ] - (Amatrix[row,entry] * rowKey)
-            #print(Amatrix,"\n")
     
-        #updates values
-        basics[leave] = entry  
-        cb  = Cj[basics]
-        Zj = cb.dot(Amatrix)
-        NetProfit = Cj-Zj[:-1] # cj - Zj, Except last column (RHS)
-        print(f"Iteration {iteration}")
-        print(Amatrix,"\n")
+            Amatrix[leave,:] = rowKey
+            
+            # Solve Equations
+            for row in range(Amatrix.shape[0]):
+                if(row == leave): continue
+                Amatrix[row, : ] =Amatrix[row, : ] - (Amatrix[row,entry] * rowKey)
+                #print(Amatrix,"\n")
         
-            
-            
-            
-#    else:
-#        while np.any(NetProfit < 0):
-#            iteration += 1
-#            
-#            entry = np.argmin(NetProfit)
-#            
-#            # Define Key
-#            ratios = Amatrix[:, -1] / Amatrix[:,entry] # RHS / Entry column
-#            
-#            columnEntry = Amatrix[:,entry]
-#            ratios[columnEntry < 0] = np.infty # if there exists negative ratios
-#            leave = np.argmin(ratios) # get the index with minimum value
-#            pivot = Amatrix[leave,entry]
-#            # Updte row with pivot and row leaving
-#            rowKey = Amatrix[leave,:] / pivot
-#
-#
-#            print(entry,leave, "\n")
-#
-#            
-#            Amatrix[leave,:] = rowKey
-#        
-#            # Solve Equations
-#            for row in range(Amatrix.shape[0]):
-#                if(row == leave): continue
-#                Amatrix[row, : ] =Amatrix[row, : ] - (Amatrix[row,entry] * rowKey   )
-#                
-#        
-#            #updates values
-#            basics[leave] = entry  
-#            cb  = Cj[basics]
-#            Zj = cb.dot(Amatrix)
-#            NetProfit = Cj-Zj[:-1] # cj - Zj, Except last column (RHS)
-#            print(f"Iteration{iteration}")
-#            print(Amatrix, "\n")
-#            if iteration == 20:break
-#            
-            
-    return dict(zip(basics,Amatrix[:, -1])), Zj[-1], Amatrix, iteration
+            #updates values
+            basics[leave] = entry  
+            cb  = Cj[basics]
+            Zj = cb.dot(Amatrix)
+            NetProfit = Cj-Zj[:-1] # cj - Zj, Except last column (RHS)
+            print(f"Iteration {iteration}")
+            print(Amatrix,"\n")
+            np.savetxt(file,np.vstack((Amatrix,Zj)),delimiter=",")
+        
+    return basics, Zj, Amatrix, iteration, NetProfit
 
 
 
 
-solutions,z,finalMatrix, iterations = simplex(X,C,b,S,A, direction=-1)
+basics,Zj,finalMatrix, iterations, netprofit = simplex(X,C,b,S,direction=1)
 
 
 print(f"No Iterations: {iterations}")
-print(solutions)
-print(f"Z value: {z}")
+print(f"Basics {basics}")
+print(np.hstack((basics[:,np.newaxis],finalMatrix)))
+print(f"Z value: {Zj}")
+print(f"\n Net Profit {netprofit}")
 print("\n",finalMatrix)
 
 #np.savetxt("matrix.csv",body,delimiter=",")
