@@ -3,11 +3,11 @@ import numpy as np
 
 
 
-C = np.array([3,4,1,5])      # Objective Function Coefficients
+C = np.array([2,-4, 5, -6])      # Objective Function Coefficients
 
-X = np.array("8 3 2 2 2 5 1 4 1 2 5 1".split(" ") , dtype=float).reshape((3,4)) # Body coefficients
-nslacks = 3
-b = np.array([10,5,6]) # Right Hand Coefficients
+X = np.array("1 4 -2 8 -1 2 3 4".split(" ") , dtype=float).reshape((2,4)) # Body coefficients
+nslacks = 2
+b = np.array([2,1]) # Right Hand Coefficients
 
 
 I =np.eye(nslacks)
@@ -22,26 +22,27 @@ X = np.hstack((X,I))
 
 
 def simplex(Amatrix,CoefObject,RHS,Slack,Artificial=None,direction=1):
+    "Direction=1 for maximazation problems"
+    
     #Initialize
     CoefObject = CoefObject.astype(float)
     nvars = len(CoefObject) # number of decision variables
-    RHS = RHS.astype(float)
+    RHS = RHS.astype(float) # Right Hand Side
     if Artificial:
         Cj = np.concatenate((CoefObject,Slack,Artificial))
     else:
         Cj = np.concatenate((CoefObject,Slack))
-    Amatrix = Amatrix.astype(float)
-    
-    RHS = RHS.astype(float) # Right Hand Side
+        
+    Amatrix = Amatrix.astype(float)    
     RHS = RHS[:,np.newaxis] # convert to column vector
     
-    Amatrix = np.hstack((Amatrix,RHS))
-    cols= np.sort(np.where(Amatrix == 1)[1]) #indexes 
+    
+    cols= np.sort(np.where(Amatrix == 1)[1]) #indexes  except last column
     cols.sort() # sort Column Indexes
     basics = cols[cols >= nvars] # select only slack and artificial indexes
-    
     cb  = Cj[basics] # Basic Coefficients    
     
+    Amatrix = np.hstack((Amatrix,RHS)) # Add RHS To Body
     Zj = cb.dot(Amatrix) 
     NetProfit = Cj-Zj[:-1] # cj - Zj
     iteration = 0
@@ -64,7 +65,7 @@ def simplex(Amatrix,CoefObject,RHS,Slack,Artificial=None,direction=1):
             # Updte row with pivot and row leaving
             rowKey = Amatrix[leave,:] / pivot
             
-            print(entry,leave, "\n")
+            print(f"Entry col: {entry+1} Leaving row: {leave+1} \n")
         
     
             Amatrix[leave,:] = rowKey
@@ -77,12 +78,13 @@ def simplex(Amatrix,CoefObject,RHS,Slack,Artificial=None,direction=1):
         
             #updates values
             basics[leave] = entry  
-            cb  = Cj[basics]
+            cb  = Cj[basics] # basics coefficients
             Zj = cb.dot(Amatrix)
             NetProfit = Cj-Zj[:-1] # cj - Zj, Except last column (RHS)
             print(f"Iteration {iteration}")
             print(Amatrix,"\n")
             np.savetxt(file,np.vstack((Amatrix,Zj)),delimiter=",")
+        
         
     return basics, Zj, Amatrix, iteration, NetProfit
 
